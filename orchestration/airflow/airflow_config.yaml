@@ -1,0 +1,186 @@
+# Airflow Configuration for Orchestration and Workflow Management
+airflow:
+  executor: CeleryExecutor
+  dags_folder: /opt/airflow/dags
+  base_log_folder: /opt/airflow/logs
+  logging_level: INFO
+  task_log_reader: file.task
+  task_log_writer: file.task
+  sql_alchemy_conn: postgresql+psycopg2://airflow:password@postgres/airflow
+  load_examples: False
+  default_timezone: UTC
+
+scheduler:
+  scheduler_heartbeat_sec: 5
+  min_file_process_interval: 30
+  max_threads: 4
+  job_heartbeat_sec: 5
+  statsd_on: True
+  statsd_host: statsd
+  statsd_port: 8125
+  statsd_prefix: airflow
+  run_duration: 600
+  scheduler_health_check_threshold: 30
+
+webserver:
+  web_server_port: 8080
+  web_server_host: 0.0.0.0
+  secret_key: mysecretkey123
+  workers: 4
+  worker_class: sync
+  worker_refresh_batch_size: 1
+  expose_config: False
+  cookie_secure: True
+  cookie_samesite: Lax
+  enable_proxy_fix: True
+
+security:
+  enforce_ssl: True
+  enable_authentication: True
+  auth_backend: airflow.contrib.auth.backends.password_auth
+  api_auth_backend: airflow.api.auth.backend.deny_all
+  roles: ['Admin', 'Viewer', 'User']
+
+celery:
+  broker_url: redis://redis:6379/0
+  result_backend: db+postgresql://airflow:password@postgres/airflow
+  celery_app_name: airflow.executors.celery_executor
+  celeryd_concurrency: 16
+  celery_broker_transport_options:
+    visibility_timeout: 21600
+  worker_log_server_port: 8793
+  worker_prefetch_multiplier: 1
+  worker_concurrency: 4
+  celery_task_track_started: True
+
+logging:
+  base_log_folder: /opt/airflow/logs
+  remote_logging: True
+  remote_log_conn_id: aws_default
+  remote_base_log_folder: s3://airflow-logs/
+  logging_level: INFO
+  fab_logging_level: WARN
+  log_format: '[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s'
+  simple_log_format: '%(asctime)s %(levelname)s - %(message)s'
+  task_log_prefix_template: '{{ ti.dag_id }}/{{ ti.task_id }}/{{ ts }}/{{ try_number }}'
+
+metrics:
+  statsd_on: True
+  statsd_host: localhost
+  statsd_port: 8125
+  statsd_prefix: airflow
+  statsd_allow_list:
+    - dag_processing.import_errors
+    - dagrun.failed
+    - dagrun.success
+
+database:
+  engine: postgresql
+  host: postgres
+  port: 5432
+  user: airflow
+  password: airflow
+  dbname: airflow
+  pool_pre_ping: True
+  max_overflow: 10
+  pool_size: 5
+  pool_timeout: 30
+
+kubernetes_executor:
+  kube_config_path: /opt/airflow/.kube/config
+  kube_namespace: airflow
+  worker_container_repository: airflow_worker_repo
+  worker_container_tag: latest
+  worker_service_account_name: airflow-worker
+  in_cluster: True
+  delete_worker_pods: True
+  worker_annotations:
+    iam.amazonaws.com/role: airflow-worker-role
+
+connections:
+  - id: postgres_default
+    conn_type: postgres
+    host: postgres
+    schema: airflow
+    login: airflow
+    password: password
+    port: 5432
+  - id: redis_default
+    conn_type: redis
+    host: redis
+    port: 6379
+  - id: aws_default
+    conn_type: s3
+    login: AWS_ACCESS_KEY_ID
+    password: AWS_SECRET_ACCESS_KEY
+    extra: '{"region_name":"us-west-2"}'
+
+variables:
+  - key: env
+    value: production
+  - key: s3_bucket
+    value: airflow-bucket
+  - key: alert_email
+    value: alerts@website.com
+
+email:
+  email_backend: airflow.utils.email.send_email_smtp
+  smtp_host: smtp.website.com
+  smtp_starttls: True
+  smtp_ssl: False
+  smtp_user: airflow@website.com
+  smtp_password: airflow123
+  smtp_port: 587
+  smtp_mail_from: airflow@website.com
+
+secrets:
+  backend: airflow.providers.hashicorp.secrets.vault.VaultBackend
+  backend_kwargs:
+    connections_path: airflow/connections
+    variables_path: airflow/variables
+    kv_path: airflow
+
+xcom_backend: airflow.providers.amazon.aws.hooks.s3.S3Hook
+
+api:
+  enable_experimental_api: True
+  auth_backends:
+    - airflow.api.auth.backend.basic_auth
+
+triggerer:
+  enabled: True
+  default_capacity: 1000
+  max_tries: 3
+
+metrics_logging:
+  enable: True
+  logger: airflow
+  statsd_host: statsd
+  statsd_port: 8125
+
+secrets_management:
+  backend: airflow.providers.hashicorp.secrets.vault.VaultBackend
+  path: airflow/secrets
+
+alerts:
+  email_on_failure: True
+  email_on_retry: False
+  retry_delay: 5m
+  retry_limit: 3
+  owner: airflow
+  send_failure_alert_to: alerts@website.com
+  send_retry_alert_to: retries@website.com
+  failure_email_subject_template: "Task Failure: {{ task_instance_key_str }}"
+  retry_email_subject_template: "Task Retry: {{ task_instance_key_str }}"
+  email_body_template: "{{ task_instance_key_str }} failed at {{ ts }}"
+
+task_runner:
+  task_runner_name: StandardTaskRunner
+  job_heartbeat_sec: 5
+  run_as_user: airflow
+  task_retries: 3
+
+auth:
+  jwt_secret_key: airflowsecretkey123
+  jwt_token_lifetime_sec: 3600
+  jwt_algorithm: HS256

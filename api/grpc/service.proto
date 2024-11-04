@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package api.grpc;
+
+option java_package = "com.website.api.grpc";
+option java_outer_classname = "GrpcServiceProto";
+option go_package = "website.com/api/grpc";
+
+// Define the service
+service DataService {
+    // RPC method for fetching data
+    rpc FetchData(FetchRequest) returns (FetchResponse);
+    
+    // RPC method for submitting data
+    rpc SubmitData(SubmitRequest) returns (SubmitResponse);
+    
+    // RPC method for updating existing data
+    rpc UpdateData(UpdateRequest) returns (UpdateResponse);
+    
+    // RPC method for deleting data
+    rpc DeleteData(DeleteRequest) returns (DeleteResponse);
+}
+
+// Message for fetching data
+message FetchRequest {
+    string data_id = 1; 
+}
+
+// Response message for fetching data
+message FetchResponse {
+    string data_id = 1;
+    string data_content = 2; 
+}
+
+// Message for submitting new data
+message SubmitRequest {
+    string data_content = 1; 
+}
+
+// Response message for submitting new data
+message SubmitResponse {
+    string data_id = 1; 
+}
+
+// Message for updating existing data
+message UpdateRequest {
+    string data_id = 1; 
+    string new_data_content = 2; 
+}
+
+// Response message for updating data
+message UpdateResponse {
+    string data_id = 1;
+    bool success = 2; 
+}
+
+// Message for deleting data
+message DeleteRequest {
+    string data_id = 1; 
+}
+
+// Response message for deleting data
+message DeleteResponse {
+    bool success = 1; 
+}

@@ -1,0 +1,142 @@
+# Production Configuration for Distributed System
+# Contains settings for various components in production environment
+
+system:
+  environment: production
+  logging_level: INFO
+  debug_mode: false
+  timezone: UTC
+
+data_ingestion:
+  batch_ingestion:
+    enabled: true
+    max_concurrent_batches: 10
+    retry_policy:
+      max_retries: 3
+      backoff_factor: 2
+    sources:
+      - type: database
+        name: production_db
+        connection:
+          host: db.production.website.com
+          port: 5432
+          username: ingestion_user
+          password: ingestion_password
+          database: prod_data
+      - type: api
+        name: external_api
+        endpoint: https://api.production.website.com/data
+        headers:
+          Authorization: Bearer production_token
+        batch_size: 500
+        timeout: 60
+
+  streaming_ingestion:
+    enabled: true
+    kafka:
+      broker_url: kafka.production.website.com:9092
+      topic: prod_stream
+      group_id: ingestion_group
+      auto_offset_reset: earliest
+    processing:
+      parallelism: 4
+      max_records_per_poll: 1000
+
+distributed_storage:
+  hdfs:
+    namenode: hdfs://namenode.production.website.com:8020
+    replication_factor: 3
+    block_size: 128MB
+  object_storage:
+    s3:
+      bucket_name: prod-data-bucket
+      region: us-west-2
+      access_key: s3_access_key
+      secret_key: s3_secret_key
+
+distributed_computing:
+  spark:
+    master_url: spark://spark.production.website.com:7077
+    driver_memory: 8g
+    executor_memory: 16g
+    num_executors: 50
+    batch_interval: 60s
+  hadoop:
+    namenode_url: hdfs://namenode.production.website.com:8020
+    replication_factor: 3
+  flink:
+    job_manager_url: flink://flink.production.website.com:8081
+    parallelism: 100
+
+orchestration:
+  airflow:
+    scheduler_url: http://airflow.production.website.com:8080
+    executor: CeleryExecutor
+    broker_url: redis://redis.production.website.com:6379/0
+    result_backend: db+mysql://airflow:airflow_password@mysql.production.website.com:3306/airflow
+  luigi:
+    central_scheduler_url: http://luigi.production.website.com:8082
+    worker_parallelism: 50
+
+monitoring:
+  prometheus:
+    scrape_interval: 15s
+    targets:
+      - job_name: 'spark'
+        static_configs:
+          - targets: ['spark.production.website.com:9090']
+      - job_name: 'flink'
+        static_configs:
+          - targets: ['flink.production.website.com:9090']
+  grafana:
+    dashboards:
+      - name: 'Production Overview'
+        url: http://grafana.production.website.com:3000
+
+security:
+  authentication:
+    oauth2:
+      client_id: prod_client_id
+      client_secret: prod_client_secret
+      token_url: https://auth.production.website.com/oauth2/token
+  authorization:
+    rbac:
+      admin_roles:
+        - production_admin
+      user_roles:
+        - production_user
+  encryption:
+    enabled: true
+    encryption_key: prod_encryption_key
+
+deployment:
+  kubernetes:
+    cluster_name: prod-cluster
+    namespace: production
+    replicas: 10
+    autoscaling:
+      enabled: true
+      min_replicas: 5
+      max_replicas: 50
+      cpu_threshold: 80
+  docker:
+    image_registry: registry.production.website.com
+    image_name: prod_system
+    image_tag: latest
+  terraform:
+    region: us-west-2
+    resources:
+      vpc: vpc-12345
+      subnet_ids:
+        - subnet-abc123
+        - subnet-def456
+    security_groups:
+      - sg-789xyz
+
+ci_cd:
+  github_actions:
+    ci_pipeline: true
+    cd_pipeline: true
+    tests_enabled: true
+    slack_notifications: true
+    slack_webhook_url: https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX

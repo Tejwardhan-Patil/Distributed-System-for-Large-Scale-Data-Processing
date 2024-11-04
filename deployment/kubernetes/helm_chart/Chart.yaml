@@ -1,0 +1,38 @@
+apiVersion: v2
+name: ds-lsds
+description: Helm chart for deploying the Distributed System for Large-Scale Data Processing
+
+# Chart version should follow SemVer rules
+version: 1.0.0
+appVersion: "1.0"
+
+# Maintainers
+maintainers:
+  - name: Person
+    email: person@website.com
+
+# Keywords that describe this chart
+keywords:
+  - distributed
+  - large-scale
+  - data processing
+  - helm
+
+# Sources pointing to the chart's origins or documentation
+sources:
+  - https://website.com/docs
+
+# List of dependencies for the chart
+dependencies:
+  - name: hdfs
+    version: 3.2.1
+    repository: "https://charts.helm.sh/stable"
+  - name: kafka
+    version: 2.8.0
+    repository: "https://charts.helm.sh/incubator"
+  - name: spark
+    version: 3.1.1
+    repository: "https://spark.apache.org"
+
+# The icon field provides a link to an image that represents the chart
+icon: https://website.com/images/chart-icon.png

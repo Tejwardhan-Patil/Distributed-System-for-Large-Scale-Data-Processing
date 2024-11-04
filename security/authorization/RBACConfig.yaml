@@ -1,0 +1,59 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: data-processor-role
+  namespace: data-processing-namespace
+  labels:
+    role: processor
+rules:
+  - apiGroups: ["data.ingestion", "data.storage", "data.processing"]
+    resources: ["pipelines", "jobs", "datasets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["security"]
+    resources: ["auditlogs", "encrypt"]
+    verbs: ["get", "create"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: bind-data-processor
+  namespace: data-processing-namespace
+  labels:
+    role: processor-binding
+subjects:
+  - kind: User
+    name: nate
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: data-processor-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: admin-cluster-role
+  labels:
+    role: admin
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["*"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: bind-admin-cluster
+  labels:
+    role: admin-cluster-binding
+subjects:
+  - kind: User
+    name: paul
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: admin-cluster-role
+  apiGroup: rbac.authorization.k8s.io

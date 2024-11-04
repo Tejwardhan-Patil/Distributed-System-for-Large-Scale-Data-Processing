@@ -1,0 +1,134 @@
+# Development Environment Configuration
+
+# General Settings
+environment: development
+app_name: large-scale-data-system
+debug_mode: true
+
+# Data Ingestion
+data_ingestion:
+  batch_ingestion:
+    enabled: true
+    source: hdfs
+    schedule: "0 0 * * *"  # Every day at midnight
+  streaming_ingestion:
+    enabled: true
+    kafka_broker: kafka-broker-dev:9092
+    kafka_topic: data_stream
+    checkpoint_dir: /tmp/kafka-checkpoints
+
+  db_connector:
+    database_url: jdbc:mysql://db-dev.local:3306/data
+    user: dev_user
+    password: dev_password
+    connection_pool_size: 10
+
+# Distributed Storage
+distributed_storage:
+  hdfs:
+    namenode_url: hdfs://namenode-dev.local:8020
+    replication_factor: 2
+  object_storage:
+    s3:
+      bucket_name: dev-bucket
+      region: us-west-1
+  nosql:
+    cassandra:
+      contact_points: [cassandra-dev.local]
+      keyspace: dev_keyspace
+  relational:
+    spanner:
+      instance_id: dev-instance
+      database_id: dev-db
+
+# Distributed Computing
+compute:
+  spark:
+    master_url: spark://spark-master-dev.local:7077
+    driver_memory: 4g
+    executor_memory: 2g
+    log_level: INFO
+  flink:
+    job_manager_url: flink://flink-master-dev.local:8081
+    task_slots: 2
+  dask:
+    scheduler: tcp://dask-scheduler-dev.local:8786
+    memory_limit: 8GB
+    num_workers: 4
+
+# Workflow Orchestration
+orchestration:
+  airflow:
+    webserver_url: http://airflow-dev.local:8080
+    default_dag_run_timeout: 600
+  luigi:
+    worker_processes: 4
+    scheduler_host: luigi-dev.local
+  argo_workflows:
+    namespace: argo-dev
+    service_account: argo-service-account-dev
+
+# Monitoring & Logging
+monitoring:
+  prometheus:
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    targets:
+      - prometheus-dev.local:9090
+  grafana:
+    url: http://grafana-dev.local:3000
+  logging:
+    elk_stack:
+      logstash_url: logstash-dev.local:5044
+    fluentd:
+      endpoint: fluentd-dev.local:24224
+      log_level: debug
+  tracing:
+    jaeger:
+      endpoint: jaeger-dev.local:14268
+      sample_rate: 1.0
+
+# Security Settings
+security:
+  authentication:
+    oauth2:
+      provider_url: https://oauth-dev.local
+      client_id: dev-client-id
+      client_secret: dev-client-secret
+  authorization:
+    rbac:
+      enabled: true
+      roles_file: /security/rbac_roles.yaml
+  encryption:
+    at_rest:
+      enabled: true
+      algorithm: AES-256
+    in_transit:
+      enabled: true
+      ssl_cert_path: /ssl/certs/dev-cert.pem
+
+# API Configuration
+api:
+  rest:
+    base_url: http://api-dev.local:8000
+    timeout: 60
+  grpc:
+    server_url: grpc-dev.local:50051
+    max_concurrent_streams: 100
+
+# Deployment
+deployment:
+  kubernetes:
+    namespace: dev-namespace
+    replicas: 3
+    image_pull_policy: Always
+  terraform:
+    backend: s3
+    state_file: terraform-dev.tfstate
+
+# CI/CD Integration
+ci_cd:
+  git_branch: development
+  github_actions:
+    ci_pipeline: .github/workflows/ci.yml
+    cd_pipeline: .github/workflows/cd.yml

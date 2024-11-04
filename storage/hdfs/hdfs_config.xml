@@ -1,0 +1,216 @@
+<?xml version="1.0"?>
+<!-- HDFS Configuration for Large Scale Distributed Storage -->
+
+<configuration>
+
+  <!-- HDFS NameNode Configuration -->
+  <property>
+    <name>dfs.namenode.name.dir</name>
+    <value>/var/lib/hadoop-hdfs/cache/hdfs/dfs/name</value>
+    <description>Directory for HDFS NameNode metadata.</description>
+  </property>
+
+  <!-- HDFS DataNode Configuration -->
+  <property>
+    <name>dfs.datanode.data.dir</name>
+    <value>/var/lib/hadoop-hdfs/cache/hdfs/dfs/data</value>
+    <description>Directory for HDFS DataNode blocks.</description>
+  </property>
+
+  <!-- Replication factor -->
+  <property>
+    <name>dfs.replication</name>
+    <value>3</value>
+    <description>Number of times to replicate HDFS data blocks.</description>
+  </property>
+
+  <!-- Block size -->
+  <property>
+    <name>dfs.blocksize</name>
+    <value>134217728</value>
+    <description>HDFS block size (128 MB).</description>
+  </property>
+
+  <!-- Safe mode settings -->
+  <property>
+    <name>dfs.namenode.safemode.threshold-pct</name>
+    <value>0.99</value>
+    <description>Percentage of blocks to be replicated before NameNode exits safemode.</description>
+  </property>
+
+  <!-- Checkpoint Configuration -->
+  <property>
+    <name>dfs.namenode.checkpoint.period</name>
+    <value>3600</value>
+    <description>Time between checkpoints (in seconds).</description>
+  </property>
+
+  <property>
+    <name>dfs.namenode.checkpoint.size</name>
+    <value>104857600</value>
+    <description>Size of NameNode's journal in bytes before it triggers a checkpoint.</description>
+  </property>
+
+  <!-- Client settings -->
+  <property>
+    <name>dfs.client.read.shortcircuit</name>
+    <value>true</value>
+    <description>Allow short-circuit local reads.</description>
+  </property>
+
+  <!-- WebHDFS settings -->
+  <property>
+    <name>dfs.webhdfs.enabled</name>
+    <value>true</value>
+    <description>Enable WebHDFS.</description>
+  </property>
+
+  <!-- NameNode Web UI -->
+  <property>
+    <name>dfs.namenode.http-address</name>
+    <value>0.0.0.0:50070</value>
+    <description>Address for NameNode web UI.</description>
+  </property>
+
+  <!-- DataNode Web UI -->
+  <property>
+    <name>dfs.datanode.http.address</name>
+    <value>0.0.0.0:50075</value>
+    <description>Address for DataNode web UI.</description>
+  </property>
+
+  <!-- Data transfer throttling -->
+  <property>
+    <name>dfs.datanode.balance.bandwidthPerSec</name>
+    <value>10485760</value>
+    <description>Maximum bandwidth for balancing data in bytes per second (10 MB/s).</description>
+  </property>
+
+  <!-- Permissions -->
+  <property>
+    <name>dfs.permissions.enabled</name>
+    <value>true</value>
+    <description>Enable HDFS permissions.</description>
+  </property>
+
+  <!-- ACLs -->
+  <property>
+    <name>dfs.namenode.acls.enabled</name>
+    <value>true</value>
+    <description>Enable HDFS ACLs.</description>
+  </property>
+
+  <!-- Snapshot settings -->
+  <property>
+    <name>dfs.namenode.support.snapshot</name>
+    <value>true</value>
+    <description>Enable HDFS snapshots.</description>
+  </property>
+
+  <!-- Encryption at rest -->
+  <property>
+    <name>dfs.encrypt.data.transfer</name>
+    <value>true</value>
+    <description>Encrypt data during transfer between DataNodes.</description>
+  </property>
+
+  <!-- Data Integrity Settings -->
+  <property>
+    <name>dfs.client.read.shortcircuit.skip.checksum</name>
+    <value>false</value>
+    <description>Enable checksums for short-circuit reads.</description>
+  </property>
+
+  <property>
+    <name>dfs.datanode.drop.cache.behind.writes</name>
+    <value>true</value>
+    <description>Drop cache after writing blocks to minimize memory consumption.</description>
+  </property>
+
+  <!-- Quota settings -->
+  <property>
+    <name>dfs.namenode.quotas.enabled</name>
+    <value>true</value>
+    <description>Enable HDFS quotas.</description>
+  </property>
+
+  <!-- HDFS Trash settings -->
+  <property>
+    <name>fs.trash.interval</name>
+    <value>360</value>
+    <description>Time period in minutes after which deleted files will be moved to trash.</description>
+  </property>
+
+  <property>
+    <name>fs.trash.checkpoint.interval</name>
+    <value>0</value>
+    <description>Checkpointing interval for trash (disabled by default).</description>
+  </property>
+
+  <!-- Network settings -->
+  <property>
+    <name>dfs.client.socket-timeout</name>
+    <value>300000</value>
+    <description>Socket timeout for HDFS client (in milliseconds).</description>
+  </property>
+
+  <!-- HA settings for NameNode -->
+  <property>
+    <name>dfs.nameservices</name>
+    <value>mycluster</value>
+    <description>Namespace for the HDFS cluster for HA setup.</description>
+  </property>
+
+  <property>
+    <name>dfs.ha.namenodes.mycluster</name>
+    <value>nn1,nn2</value>
+    <description>Define the active and standby NameNodes for the cluster.</description>
+  </property>
+
+  <property>
+    <name>dfs.namenode.rpc-address.mycluster.nn1</name>
+    <value>node1.mycluster.com:8020</value>
+    <description>RPC address of the first NameNode.</description>
+  </property>
+
+  <property>
+    <name>dfs.namenode.rpc-address.mycluster.nn2</name>
+    <value>node2.mycluster.com:8020</value>
+    <description>RPC address of the second NameNode.</description>
+  </property>
+
+  <property>
+    <name>dfs.ha.automatic-failover.enabled</name>
+    <value>true</value>
+    <description>Enable automatic failover for the HA NameNodes.</description>
+  </property>
+
+  <!-- Journal Node settings for HA -->
+  <property>
+    <name>dfs.journalnode.edits.dir</name>
+    <value>/var/lib/hadoop-hdfs/journalnode</value>
+    <description>Directory for storing JournalNode edits.</description>
+  </property>
+
+  <!-- Balancer threshold -->
+  <property>
+    <name>dfs.balance.bandwidthPerSec</name>
+    <value>10485760</value>
+    <description>Balancer bandwidth per second (10 MB/s).</description>
+  </property>
+
+  <!-- Hadoop tmp directory -->
+  <property>
+    <name>hadoop.tmp.dir</name>
+    <value>/tmp/hadoop-${user.name}</value>
+    <description>A base for temporary directories.</description>
+  </property>
+
+  <!-- Yarn integration -->
+  <property>
+    <name>yarn.resourcemanager.ha.enabled</name>
+    <value>true</value>
+    <description>Enable HA for YARN ResourceManager.</description>
+  </property>
+
+</configuration>

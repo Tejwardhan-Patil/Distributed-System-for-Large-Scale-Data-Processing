@@ -1,0 +1,47 @@
+# General Spark Cluster Configuration
+spark:
+  master: "spark://spark-master:7077"  
+  appName: "LargeScaleDataProcessingApp"  
+  deployMode: "cluster"  
+  executorMemory: "4g"  
+  driverMemory: "4g"  
+  executorCores: 4  
+  totalExecutorCores: 16  
+  serializer: "org.apache.spark.serializer.KryoSerializer"  
+  eventLogEnabled: true 
+  eventLogDir: "hdfs://namenode:8020/spark-logs"  
+  ui.port: 4040  # Port for the Spark UI
+  
+# Spark Dynamic Resource Allocation
+dynamicAllocation:
+  enabled: true  s
+  minExecutors: 4  
+  maxExecutors: 16  
+  initialExecutors: 8  
+  shuffleTrackingEnabled: true 
+
+# Spark SQL and Shuffle Service Configurations
+sql:
+  autoBroadcastJoinThreshold: "10MB"  
+  broadcastTimeout: 1200  
+  shufflePartitions: 200  
+
+# Spark Streaming Configuration
+streaming:
+  backpressureEnabled: true  
+  blockInterval: "500ms"  
+  receiverMaxRate: 1000  
+
+# Spark Checkpointing
+checkpoint:
+  directory: "hdfs://namenode:8020/spark-checkpoints"  
+  interval: 120  
+
+# Hadoop and HDFS Integration
+hadoop:
+  fs.defaultFS: "hdfs://namenode:8020"  
+
+# Spark Logging and Metrics
+metrics:
+  conf: "metrics.properties"  
+logConf: true  

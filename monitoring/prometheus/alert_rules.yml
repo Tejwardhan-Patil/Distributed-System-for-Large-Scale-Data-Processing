@@ -1,0 +1,146 @@
+groups:
+  - name: system_alerts
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High CPU usage detected on {{ $labels.instance }}"
+          description: "CPU usage is above 85% for more than 2 minutes on instance {{ $labels.instance }}."
+          action: "Investigate the processes consuming CPU."
+
+      - alert: HighMemoryUsage
+        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Memory usage detected on {{ $labels.instance }}"
+          description: "Available memory is less than 15% for more than 5 minutes on instance {{ $labels.instance }}."
+          action: "Check memory-intensive applications running on the server."
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.10
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low Disk Space detected on {{ $labels.instance }}"
+          description: "Disk space usage on {{ $labels.instance }} is less than 10%."
+          action: "Consider cleaning up files or expanding disk capacity."
+
+      - alert: HighDiskIO
+        expr: rate(node_disk_io_time_seconds_total[5m]) > 0.80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Disk IO detected on {{ $labels.instance }}"
+          description: "Disk I/O operations are above 80% utilization for more than 5 minutes."
+          action: "Check for disk bottlenecks."
+
+      - alert: HighNetworkTraffic
+        expr: sum by (instance) (rate(node_network_receive_bytes_total[1m]) + rate(node_network_transmit_bytes_total[1m])) > 1e9
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High Network Traffic on {{ $labels.instance }}"
+          description: "Network traffic exceeds 1Gbps for more than 1 minute on {{ $labels.instance }}."
+          action: "Analyze the traffic sources and check for abnormal activity."
+
+      - alert: InstanceDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Instance down"
+          description: "The instance {{ $labels.instance }} is down for more than 5 minutes."
+          action: "Check instance status and restart if necessary."
+
+      - alert: HighLoadAverage
+        expr: node_load1 > (count(node_cpu_seconds_total{mode="system"}) * 1.5)
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Load Average on {{ $labels.instance }}"
+          description: "Load average is higher than 1.5 times the number of CPUs for more than 5 minutes on {{ $labels.instance }}."
+          action: "Analyze the system load and check running processes."
+
+  - name: app_alerts
+    rules:
+      - alert: AppMemoryUsageHigh
+        expr: process_resident_memory_bytes{job="app"} > 500000000
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage by application {{ $labels.instance }}"
+          description: "Application memory usage exceeds 500MB for more than 3 minutes."
+          action: "Investigate memory leaks or optimize memory usage in the application."
+
+      - alert: AppResponseTimeHigh
+        expr: rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m]) > 1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High response time for application {{ $labels.instance }}"
+          description: "Application response time is higher than 1 second on average for more than 2 minutes."
+          action: "Check application performance issues and optimize response time."
+
+      - alert: AppErrorRateHigh
+        expr: increase(http_requests_total{status=~"5.."}[5m]) / increase(http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate for application {{ $labels.instance }}"
+          description: "More than 5% of requests are returning errors for more than 5 minutes."
+          action: "Check application logs and fix any critical errors."
+
+  - name: custom_metrics_alerts
+    rules:
+      - alert: DatabaseQueryTimeHigh
+        expr: rate(db_query_duration_seconds_sum[5m]) / rate(db_query_duration_seconds_count[5m]) > 2
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High database query response time"
+          description: "Database query response time exceeds 2 seconds on average for more than 3 minutes."
+          action: "Investigate slow queries and optimize database performance."
+
+      - alert: CacheMissRateHigh
+        expr: rate(cache_misses_total[5m]) / rate(cache_requests_total[5m]) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High cache miss rate detected"
+          description: "More than 20% of cache requests are misses for more than 5 minutes."
+          action: "Investigate cache performance and optimize caching strategies."
+
+      - alert: QueueLengthHigh
+        expr: sum(queue_length{job="queue"}) > 100
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High queue length detected"
+          description: "Queue length exceeds 100 for more than 10 minutes."
+          action: "Check the queue processing rate and address any bottlenecks."
+
+      - alert: ContainerRestarting
+        expr: increase(kube_pod_container_status_restarts_total[5m]) > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container restarting frequently"
+          description: "A container in the pod has restarted more than 5 times in the last 5 minutes."
+          action: "Investigate the cause of container crashes and fix the issue."

@@ -1,0 +1,92 @@
+# General Ingestion Settings
+ingestion:
+  retry_count: 3
+  retry_backoff: 5  
+  max_parallel_ingestions: 10 
+  log_level: "INFO"  
+
+# Batch Ingestion Configuration
+batch_ingestion:
+  enabled: true
+  schedule: "0 0 * * *"  # Cron schedule for batch ingestion (every midnight)
+  sources:
+    - name: "source_1"
+      type: "database"
+      database:
+        db_type: "mysql"
+        host: "db.website.com"
+        port: 3306
+        user: "batch_user"
+        password: "secure_password"
+        database: "source_db"
+        query: "SELECT * FROM table_name WHERE timestamp > :last_run_time"
+      destination:
+        type: "hdfs"
+        path: "/data/ingested/source_1/"
+        format: "parquet"
+    - name: "source_2"
+      type: "file_system"
+      directory: "/mnt/data/source_2/"
+      file_pattern: "*.csv"
+      destination:
+        type: "s3"
+        bucket: "s3_bucket"
+        path: "/ingestion/batch/source_2/"
+        format: "parquet"
+
+# Streaming Ingestion Configuration
+streaming_ingestion:
+  enabled: true
+  kafka:
+    bootstrap_servers: "kafka1.website.com:9092,kafka2.website.com:9092"
+    topic: "ingestion_topic"
+    group_id: "stream_ingestion_group"
+    auto_offset_reset: "earliest"
+    enable_auto_commit: true
+    max_poll_records: 500
+  kinesis:
+    stream_name: "data_stream"
+    region: "us-east-1"
+    shard_count: 2
+
+# Preprocessing Configuration
+preprocessing:
+  clean_missing_data: true
+  standardize_formats: true
+  transformations:
+    - name: "timestamp_conversion"
+      type: "date"
+      source_field: "timestamp"
+      format: "yyyy-MM-dd HH:mm:ss"
+    - name: "currency_conversion"
+      type: "currency"
+      source_field: "amount"
+      target_currency: "USD"
+      exchange_rate_api: "https://api.website.com/exchange_rate"
+
+# Database Connections for Ingestion
+databases:
+  - name: "main_db"
+    db_type: "postgres"
+    host: "db.website.com"
+    port: 5432
+    user: "ingestion_user"
+    password: "secure_password"
+    database: "main_db"
+
+  - name: "nosql_db"
+    db_type: "mongodb"
+    host: "nosql.website.com"
+    port: 27017
+    user: "nosql_user"
+    password: "secure_password"
+    database: "nosql_db"
+
+# Alerting and Monitoring
+monitoring:
+  alert_on_failure: true
+  alert_email: "alerts@website.com"
+  prometheus:
+    enabled: true
+    metrics_endpoint: "/metrics"
+    push_gateway: "prometheus.website.com:9091"

@@ -1,0 +1,152 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+  external_labels:
+    monitor: 'distributed-system-monitor'
+
+rule_files:
+  - "monitoring/prometheus/alert_rules.yml"
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Node exporter
+  - job_name: 'node_exporter'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['localhost:9100']
+
+  # Ingest Batch Data from Spark
+  - job_name: 'spark_batch_processing'
+    static_configs:
+      - targets: ['spark-master:8080', 'spark-worker-1:8081', 'spark-worker-2:8081']
+
+  # Streaming Ingestion via Kafka Exporter
+  - job_name: 'kafka_exporter'
+    static_configs:
+      - targets: ['kafka-exporter:9308']
+  
+  # Monitoring Cassandra Cluster
+  - job_name: 'cassandra'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['cassandra-node-1:9103', 'cassandra-node-2:9103', 'cassandra-node-3:9103']
+
+  # Ingestion pipeline status check
+  - job_name: 'ingestion_pipeline'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['ingestion-pipeline-service:9101']
+
+  # HDFS monitoring
+  - job_name: 'hdfs'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['hdfs-namenode:9870', 'hdfs-datanode:9864']
+
+  # Airflow DAG monitoring
+  - job_name: 'airflow_dag'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['airflow-webserver:8080', 'airflow-scheduler:8089']
+
+  # Flink job metrics
+  - job_name: 'flink_jobs'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['flink-master:8081']
+
+  # Dask scheduler
+  - job_name: 'dask_scheduler'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['dask-scheduler:8787']
+
+  # Logging via Fluentd
+  - job_name: 'fluentd'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['fluentd-service:24231']
+
+  # Kubernetes metrics (via kube-state-metrics)
+  - job_name: 'kubernetes'
+    kubernetes_sd_configs:
+      - role: node
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '(.*):10250'
+        replacement: '$1:9100'
+        target_label: __address__
+
+  # Monitoring for Elasticsearch (ELK stack)
+  - job_name: 'elasticsearch'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['elasticsearch-node1:9200', 'elasticsearch-node2:9200']
+
+  # Alerts for OpenTelemetry traces
+  - job_name: 'opentelemetry'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['otel-collector:8888']
+
+  # Grafana metrics
+  - job_name: 'grafana'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['grafana:3000']
+
+  # Batch jobs advanced scrape settings
+  - job_name: 'batch_jobs'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['batch-job-service:9092']
+    metric_relabel_configs:
+      - source_labels: ['__name__']
+        regex: 'batch_job_duration_seconds'
+        action: keep
+      - source_labels: ['__name__']
+        regex: 'batch_job_status'
+        action: drop
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+# External remote storage for long-term storage of metrics
+remote_write:
+  - url: "http://remote-storage:9201/write"
+    write_relabel_configs:
+      - source_labels: [job]
+        regex: 'spark|flink'
+        action: keep
+
+remote_read:
+  - url: "http://remote-storage:9201/read"
+    read_relabel_configs:
+      - source_labels: [job]
+        regex: 'cassandra|kafka'
+        action: keep
+
+# Throttling and limiting excessive metrics
+limit_resources:
+  cpu: '500m'
+  memory: '1Gi'
+
+# Rules for setting retention policies
+retention:
+  time: 30d
+  size: 100GB
+  wal_compression: true
+  min_wal_time: 6h
+
+# Config to integrate service discovery for cloud services
+service_discovery:
+  static_configs:
+    - targets: ['cloudservice1.internal:9090', 'cloudservice2.internal:9091']

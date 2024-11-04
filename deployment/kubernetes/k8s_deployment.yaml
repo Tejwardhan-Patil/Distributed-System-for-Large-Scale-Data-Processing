@@ -1,0 +1,141 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: distributed-system-deployment
+  labels:
+    app: distributed-system
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: distributed-system
+  template:
+    metadata:
+      labels:
+        app: distributed-system
+    spec:
+      containers:
+      - name: data-ingestion-container
+        image: website.com/data-ingestion:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: INGESTION_CONFIG_PATH
+          value: "/config/ingestion_config.yaml"
+        volumeMounts:
+        - name: ingestion-config-volume
+          mountPath: /config
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "0.5"
+          limits:
+            memory: "1024Mi"
+            cpu: "1"
+      - name: data-processing-container
+        image: website.com/data-processing:latest
+        ports:
+        - containerPort: 9090
+        env:
+        - name: PROCESSING_CONFIG_PATH
+          value: "/config/spark_config.yaml"
+        volumeMounts:
+        - name: processing-config-volume
+          mountPath: /config
+        resources:
+          requests:
+            memory: "1024Mi"
+            cpu: "1"
+          limits:
+            memory: "2048Mi"
+            cpu: "2"
+      - name: monitoring-container
+        image: website.com/monitoring-service:latest
+        ports:
+        - containerPort: 9091
+        env:
+        - name: PROMETHEUS_CONFIG_PATH
+          value: "/config/prometheus_config.yaml"
+        volumeMounts:
+        - name: monitoring-config-volume
+          mountPath: /config
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "0.25"
+          limits:
+            memory: "512Mi"
+            cpu: "0.5"
+      volumes:
+      - name: ingestion-config-volume
+        configMap:
+          name: ingestion-config
+      - name: processing-config-volume
+        configMap:
+          name: spark-config
+      - name: monitoring-config-volume
+        configMap:
+          name: prometheus-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: distributed-system-service
+spec:
+  selector:
+    app: distributed-system
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+    - protocol: TCP
+      port: 8080
+      targetPort: 9090
+    - protocol: TCP
+      port: 8081
+      targetPort: 9091
+  type: LoadBalancer
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ingestion-config
+data:
+  ingestion_config.yaml: |
+    ingestion:
+      batchSize: 1000
+      retryPolicy:
+        retries: 5
+        delay: 10s
+      dataSources:
+        - type: "kafka"
+          broker: "kafka-broker:9092"
+          topic: "data-ingestion"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spark-config
+data:
+  spark_config.yaml: |
+    spark:
+      master: "spark://spark-master:7077"
+      executorMemory: "4g"
+      executorCores: 4
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+data:
+  prometheus_config.yaml: |
+    global:
+      scrape_interval: 15s
+    scrape_configs:
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']

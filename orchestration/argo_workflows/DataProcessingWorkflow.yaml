@@ -1,0 +1,89 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: data-processing-pipeline-
+  labels:
+    workflows.argoproj.io/controller-instanceid: argo
+spec:
+  entrypoint: main-workflow
+  templates:
+  - name: main-workflow
+    dag:
+      tasks:
+      - name: data-ingestion
+        template: batch-ingestion
+      - name: data-cleaning
+        dependencies: [data-ingestion]
+        template: data-cleaning
+      - name: data-transformation
+        dependencies: [data-cleaning]
+        template: data-transformation
+      - name: spark-batch-processing
+        dependencies: [data-transformation]
+        template: spark-batch-processing
+      - name: result-storage
+        dependencies: [spark-batch-processing]
+        template: result-storage
+      - name: cleanup
+        dependencies: [result-storage]
+        template: cleanup-task
+
+  - name: batch-ingestion
+    script:
+      image: apache/airflow:latest
+      command: [python]
+      source: |
+        import requests
+        # Batch data ingestion from source
+        response = requests.get('https://data-source-url.com/api/data')
+        if response.status_code == 200:
+          with open('/data/ingested_data.csv', 'w') as file:
+            file.write(response.text)
+
+  - name: data-cleaning
+    script:
+      image: python:3.8
+      command: [python]
+      source: |
+        import pandas as pd
+        # Load the ingested data
+        df = pd.read_csv('/data/ingested_data.csv')
+        # Cleaning the data
+        df.dropna(inplace=True)
+        df.to_csv('/data/cleaned_data.csv', index=False)
+
+  - name: data-transformation
+    script:
+      image: hseeberger/scala-sbt:11.0.12_1.5.5_2.13.6 
+      command: [sh, -c]
+      source: |
+        echo "Running Scala data transformation"
+        scalac /app/DataTransformation.scala && 
+        scala -classpath /app DataTransformation  
+
+  - name: spark-batch-processing
+    script:
+      image: bde2020/spark-submit:latest
+      command: [spark-submit]
+      args: 
+      - --class
+      - com.website.spark.BatchProcessing
+      - local:///app/batch-processing.jar
+      - /data/transformed_data.csv
+      - /data/processed_data.csv
+
+  - name: result-storage
+    script:
+      image: amazon/aws-cli:latest
+      command: [sh, -c]
+      source: |
+        # Copy processed data to S3 or HDFS
+        aws s3 cp /data/processed_data.csv s3://bucket-name/processed_data.csv
+
+  - name: cleanup-task
+    script:
+      image: alpine:latest
+      command: [sh, -c]
+      source: |
+        echo "Cleaning up temporary files"
+        rm -f /data/*.csv

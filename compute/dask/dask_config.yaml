@@ -1,0 +1,64 @@
+# Dask Configuration for Distributed Computing
+
+# Scheduler settings
+scheduler:
+  host: 0.0.0.0    
+  port: 8786         
+  dashboard:
+    enabled: true   
+    port: 8787      
+  allowed-failures: 3  
+
+# Worker settings
+worker:
+  nprocs: 4        
+  nthreads: 2        
+  memory-limit: 8GB  
+  resources:
+    GPU: 1           
+  preload: ["/preload_script.py"]  
+  lifetime: 3600     
+  death-timeout: 60  
+
+# Networking
+distributed:
+  comm:
+    timeouts:
+      connect: 30s   
+      tcp: 60s       
+
+# Security (TLS settings for encrypted communications)
+security:
+  tls:
+    ca-file: /ca.pem            
+    cert-file: /cert.pem        
+    key-file: /key.pem        
+  require-encryption: true             
+
+# Adaptive scaling (autoscaling workers based on demand)
+adaptive:
+  enabled: true        
+  minimum: 2         
+  maximum: 10          
+
+# Logging settings
+logging:
+  distributed: info   
+  worker: warning      
+  scheduler: info     
+  output: /var/log/dask.log
+
+# Job queueing for task prioritization
+queue:
+  priority: high  
+
+# Diagnostics and Monitoring
+diagnostics:
+  task-stream: true    
+  event-loop: true    
+  memory: true         
+
+# Extra Configurations
+extra:
+  spill-to-disk: true 
+  temporary-directory: /mnt/data/dask-tmp  

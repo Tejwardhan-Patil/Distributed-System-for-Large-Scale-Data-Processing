@@ -1,0 +1,46 @@
+# Flink Cluster Configuration
+
+# General configuration settings
+jobmanager.rpc.address: flink-jobmanager
+jobmanager.rpc.port: 6123
+jobmanager.heap.size: 2048m
+taskmanager.heap.size: 4096m
+parallelism.default: 4
+
+# JobManager settings
+jobmanager.execution.failover-strategy: region
+jobmanager.adaptive-scheduler.enabled: true
+jobmanager.memory.process.size: 4096m
+
+# TaskManager settings
+taskmanager.numberOfTaskSlots: 4
+taskmanager.memory.process.size: 8192m
+taskmanager.network.memory.min: 512m
+taskmanager.network.memory.max: 2048m
+
+# High Availability Configuration 
+high-availability: zookeeper
+high-availability.zookeeper.quorum: zookeeper1:2181,zookeeper2:2181,zookeeper3:2181
+high-availability.zookeeper.path.root: /flink
+high-availability.storageDir: hdfs:///flink/ha/
+
+# State Backend 
+state.backend: rocksdb
+state.checkpoints.dir: hdfs:///flink/checkpoints/
+state.savepoints.dir: hdfs:///flink/savepoints/
+
+# Restart strategy
+restart-strategy: fixed-delay
+restart-strategy.fixed-delay.attempts: 3
+restart-strategy.fixed-delay.delay: 10s
+
+# Metrics and Monitoring
+metrics.reporter.prom.class: org.apache.flink.metrics.prometheus.PrometheusReporter
+metrics.reporter.prom.port: 9249
+
+# Web Dashboard Configuration
+rest.port: 8081
+rest.address: flink-rest
+
+# Logging Configuration
+logging.level: INFO

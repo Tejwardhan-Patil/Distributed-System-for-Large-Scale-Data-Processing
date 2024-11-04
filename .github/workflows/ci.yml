@@ -1,0 +1,118 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    services:
+      kafka:
+        image: wurstmeister/kafka:latest
+        ports:
+          - 9092:9092
+        options: --name kafka --network-alias kafka
+
+      cassandra:
+        image: cassandra:latest
+        ports:
+          - 9042:9042
+        options: --name cassandra --network-alias cassandra
+
+    strategy:
+      matrix:
+        language: [python, java, scala]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 11
+        if: matrix.language == 'java'
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+
+      - name: Set up Python 3.9
+        if: matrix.language == 'python'
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Set up Scala
+        if: matrix.language == 'scala'
+        uses: coursier/setup-action@v1
+
+      - name: Install dependencies (Python)
+        if: matrix.language == 'python'
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r data-ingestion/src/requirements.txt
+
+      - name: Install dependencies (Java)
+        if: matrix.language == 'java'
+        run: ./gradlew build --no-daemon
+
+      - name: Install dependencies (Scala)
+        if: matrix.language == 'scala'
+        run: sbt update
+
+      - name: Run unit tests (Python)
+        if: matrix.language == 'python'
+        run: |
+          pytest data-ingestion/tests/
+
+      - name: Run unit tests (Java)
+        if: matrix.language == 'java'
+        run: ./gradlew test --no-daemon
+
+      - name: Run unit tests (Scala)
+        if: matrix.language == 'scala'
+        run: sbt test
+
+      - name: Archive test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: '**/test-results/**'
+
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Python linters
+        run: |
+          pip install flake8 black
+
+      - name: Lint Python code
+        run: |
+          flake8 .
+          black --check .
+
+  docker-build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build Docker image
+        run: |
+          docker build -t website.com/project:latest -f deployment/docker/Dockerfile .

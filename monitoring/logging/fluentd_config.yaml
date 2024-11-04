@@ -1,0 +1,72 @@
+# Fluentd Configuration for Centralized Logging
+
+# Input Section: Collect logs from different sources
+source:
+  # Tail input plugin to read logs from specific log files
+  - type: tail
+    path: /var/log/application/*.log
+    pos_file: /var/log/fluentd-app.pos
+    format: json
+    tag: app.logs
+
+  # Docker logs collection 
+  - type: tail
+    path: /var/lib/docker/containers/*/*.log
+    pos_file: /var/log/fluentd-docker.pos
+    format: json
+    tag: docker.logs
+
+  # Kubernetes logs collection
+  - type: tail
+    path: /var/log/containers/*.log
+    pos_file: /var/log/fluentd-k8s.pos
+    format: json
+    tag: k8s.logs
+
+# Filter Section: Modify logs if necessary
+filter:
+  # Parse log entries as JSON format
+  - type: parser
+    format: json
+    key_name: log
+    reserve_data: true
+    reserve_time: true
+    inject_key_prefix: 'parsed.'
+
+  # Add environment metadata (useful for identifying environment)
+  - type: record_transformer
+    tag: environment
+    record:
+      env: "production"
+
+  # Mask sensitive information (hide passwords)
+  - type: grep
+    exclude:
+      pattern: "password=.*"
+
+# Output Section: Send logs to storage or other systems (Elasticsearch, Kafka)
+match:
+  # Output logs to Elasticsearch
+  - type: elasticsearch
+    logstash_format: true
+    include_tag_key: true
+    host: "elasticsearch-master"
+    port: 9200
+    index_name: "fluentd-logs-${tag}-#{Time.now.strftime('%Y%m%d')}"
+    tag: "app.*"
+
+  # Output logs to Kafka
+  - type: kafka
+    brokers: "kafka-broker1:9092,kafka-broker2:9092"
+    default_topic: "fluentd_logs"
+    output_data_type: json
+    tag: "app.*"
+
+# Buffer configuration to handle bursty logs and ensure reliable delivery
+buffer:
+  path: /var/log/fluentd-buffer
+  flush_interval: 10s
+  retry_forever: true
+  queue_limit_length: 512
+  chunk_limit_size: 1m
+  compress: gzip

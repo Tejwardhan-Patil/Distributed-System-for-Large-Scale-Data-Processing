@@ -1,0 +1,193 @@
+# Jaeger Configuration for Distributed Tracing
+
+apiVersion: jaegertracing.io/v1
+kind: Jaeger
+metadata:
+  name: jaeger-instance
+spec:
+  strategy: production
+  collector:
+    options:
+      collector:
+        num-workers: 100
+        queue-size: 2000
+        grpc-server-max-message-size: 4194304 # 4MB
+      kafka:
+        brokers: kafka:9092
+        topic: jaeger-spans
+        encoding: proto
+        partition: 1
+  ingester:
+    options:
+      kafka:
+        brokers: kafka:9092
+        topic: jaeger-spans
+        group-id: jaeger-ingester
+        partition: 1
+  query:
+    base-path: /jaeger
+    options:
+      query:
+        max-clock-skew-adjustment: 1ms
+        trace-query-lookback-duration: 168h # One week
+  sampling:
+    strategies:
+      default_strategy:
+        type: probabilistic
+        param: 0.1
+      service_strategies:
+        - service: payment-service
+          type: probabilistic
+          param: 0.2
+        - service: user-service
+          type: probabilistic
+          param: 0.05
+  storage:
+    type: elasticsearch
+    options:
+      es:
+        server-urls: http://elasticsearch:9200
+        index-prefix: jaeger
+        bulk-size: 5000
+        flush-interval: 5s
+        sniff: false
+  agent:
+    options:
+      processors:
+        - model: grpc
+          server:
+            host-port: 0.0.0.0:14250
+          workers: 50
+          server-max-message-size: 4194304
+        - model: tchannel
+          server:
+            host-port: 0.0.0.0:14267
+          workers: 50
+          server-max-message-size: 4194304
+      reporters:
+        queue-size: 2000
+        retry:
+          max-attempts: 5
+          backoff: 10s
+      sampling:
+        sampling-strategies-file: /jaeger/sampling_strategies.json
+  ui:
+    options:
+      ui:
+        static-assets: /jaeger/ui/
+        archive-enabled: true
+        default-archive-span-contexts: 100
+        default-archive-traces: 50
+  sidecar:
+    options:
+      sidecar:
+        tag: "jaeger"
+        injection: true
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+    requests:
+      cpu: "250m"
+      memory: "256Mi"
+
+# Jaeger Agent Configuration
+jaeger-agent-config:
+  options:
+    logging:
+      level: info
+    reporters:
+      tchannel:
+        host-port: "0.0.0.0:6831"
+      grpc:
+        host-port: "0.0.0.0:14250"
+    metrics:
+      backend: prometheus
+      prometheus-port: 9090
+
+# Sampling Strategies Configuration
+sampling-strategies:
+  default_strategy:
+    type: probabilistic
+    param: 0.001
+  service_strategies:
+    - service: frontend
+      type: probabilistic
+      param: 0.05
+    - service: backend
+      type: rate_limiting
+      param: 2
+
+# Elasticsearch Index Settings
+elasticsearch-index-configuration:
+  es:
+    number_of_shards: 5
+    number_of_replicas: 1
+    refresh_interval: 30s
+    analysis:
+      analyzer:
+        default:
+          type: standard
+        jaeger_analyzer:
+          tokenizer: keyword
+          filter: lowercase
+
+# Prometheus Metrics Configuration
+prometheus:
+  scrape_configs:
+    - job_name: 'jaeger'
+      scrape_interval: 15s
+      metrics_path: /metrics
+      static_configs:
+        - targets:
+            - 'localhost:14268'
+            - 'localhost:16686'
+
+# Jaeger Collector Service Deployment
+collector-deployment:
+  replicas: 3
+  resources:
+    limits:
+      cpu: "2"
+      memory: "2Gi"
+    requests:
+      cpu: "1"
+      memory: "1Gi"
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 85
+
+# OpenTelemetry Collector Configuration
+opentelemetry-collector:
+  receivers:
+    jaeger:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:14250
+        thrift_compact:
+          endpoint: 0.0.0.0:6831
+        thrift_binary:
+          endpoint: 0.0.0.0:6832
+  processors:
+    batch:
+      send_batch_size: 1024
+      timeout: 10s
+    queued_retry:
+      retry_on_failure: true
+  exporters:
+    jaeger:
+      endpoint: http://localhost:14268/api/traces
+    prometheus:
+      endpoint: 0.0.0.0:8888
+  service:
+    pipelines:
+      traces:
+        receivers: [jaeger]
+        processors: [batch, queued_retry]
+        exporters: [jaeger]
+      metrics:
+        receivers: [prometheus]
+        exporters: [prometheus]

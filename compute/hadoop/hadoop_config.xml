@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hadoop Configuration for Cluster Setup -->
+
+<configuration>
+
+    <!-- Core Hadoop Settings -->
+    <property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://namenode:9000</value>
+        <description>HDFS URI for the Hadoop cluster</description>
+    </property>
+
+    <!-- Namenode Settings -->
+    <property>
+        <name>dfs.namenode.name.dir</name>
+        <value>/var/lib/hadoop/hdfs/namenode</value>
+        <description>Directory on local file system for storing namenode metadata</description>
+    </property>
+
+    <!-- Datanode Settings -->
+    <property>
+        <name>dfs.datanode.data.dir</name>
+        <value>/var/lib/hadoop/hdfs/datanode</value>
+        <description>Directory for storing block data on the datanode</description>
+    </property>
+
+    <!-- Resource Manager (YARN) Settings -->
+    <property>
+        <name>yarn.resourcemanager.hostname</name>
+        <value>resourcemanager</value>
+        <description>Hostname of the Resource Manager</description>
+    </property>
+    
+    <!-- Job History Server Settings -->
+    <property>
+        <name>mapreduce.jobhistory.address</name>
+        <value>historyserver:10020</value>
+        <description>Job History Server address</description>
+    </property>
+
+    <!-- Hadoop Memory Configuration -->
+    <property>
+        <name>yarn.nodemanager.resource.memory-mb</name>
+        <value>8192</value>
+        <description>Memory allocation for NodeManager (in MB)</description>
+    </property>
+
+    <property>
+        <name>yarn.scheduler.maximum-allocation-mb</name>
+        <value>16384</value>
+        <description>Maximum memory allocation per container (in MB)</description>
+    </property>
+
+    <!-- Number of Virtual Cores per Node -->
+    <property>
+        <name>yarn.nodemanager.resource.cpu-vcores</name>
+        <value>8</value>
+        <description>Number of virtual CPU cores available for containers</description>
+    </property>
+
+    <!-- Replication Factor -->
+    <property>
+        <name>dfs.replication</name>
+        <value>3</value>
+        <description>Number of times a file is replicated in the HDFS cluster</description>
+    </property>
+
+    <!-- Temporary Data Directory -->
+    <property>
+        <name>hadoop.tmp.dir</name>
+        <value>/var/lib/hadoop/tmp</value>
+        <description>Directory for temporary data storage</description>
+    </property>
+
+    <!-- Log Directory -->
+    <property>
+        <name>hadoop.log.dir</name>
+        <value>/var/log/hadoop</value>
+        <description>Directory for storing Hadoop logs</description>
+    </property>
+
+</configuration>

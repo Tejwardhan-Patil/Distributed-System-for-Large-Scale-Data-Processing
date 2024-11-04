@@ -1,0 +1,166 @@
+# Luigi configuration file for orchestrating data pipelines
+# Luigi orchestration and workflow management system
+
+core:
+  default-scheduler-host: scheduler.website.com
+  default-scheduler-port: 8082
+  worker-count: 10
+  retry-external-tasks: true
+  local-scheduler: false
+  daemon: true
+  use-command-line-section: false
+
+scheduler:
+  retry-delay: 60 # Seconds before retrying failed tasks
+  disable-num-failures: 10
+  record_task_history: true
+  prune-time: 86400 # Keep task history for 24 hours
+  idle-time-before-reload: 30
+
+worker:
+  keep-alive: true
+  ping-interval: 5
+  task-limit: 1000
+  wait-for-external: true
+  timeout: 1200
+  force-multiprocessing: true
+  no-install-shutdown-handler: false
+  process-signal-timeout: 20
+
+task:
+  disable-hash-parameters: true
+  max-reschedule-retries: 5
+  retry-external-tasks: true
+  retry-external-tasks-attempts: 3
+  max-task-retries: 2
+  task-limit: 10000
+  resources:
+    cpu: 4
+    memory: 16g
+    disk: 200g
+    bandwidth: 1000mbps
+  cache-path: /var/tmp/luigi/cache
+
+auth:
+  enabled: true
+  auth-mechanism: oauth
+  oauth-client-id: client-id
+  oauth-client-secret: client-secret
+  oauth-endpoint: https://auth.website.com/token
+  ssl: true
+  ssl-certfile: /ssl/certs/cert.pem
+  ssl-keyfile: /ssl/private/key.pem
+  ssl-ca-certfile: /ssl/certs/ca-cert.pem
+
+logging:
+  level: INFO
+  format: '%(asctime)s %(name)s %(levelname)s %(message)s'
+  datefmt: '%Y-%m-%d %H:%M:%S'
+  file: /var/log/luigi/luigi.log
+  maxBytes: 10485760
+  backupCount: 5
+  propagate: true
+
+execution_summary:
+  enabled: true
+  format: 'json'
+  output-path: /var/log/luigi/execution_summary.json
+
+prometheus_metrics:
+  enabled: true
+  prometheus-port: 9300
+  prometheus-namespace: luigi
+  prometheus-endpoint: /metrics
+
+security:
+  enable_ssl: true
+  ssl_keyfile: /ssl/certs/server.key
+  ssl_certfile: /ssl/certs/server.crt
+  ssl_verify_mode: VERIFY_PEER
+  ssl_ca_certfile: /ssl/certs/ca.crt
+  auth_method: oauth2
+
+resources:
+  default-memory: 4096MB
+  default-cpu: 2
+  default-io: 500MBps
+
+retention_policies:
+  max-task-history: 7  # Days
+  prune-task-interval: 3600  # Prune every hour
+
+mail:
+  enabled: true
+  smtp-host: smtp.website.com
+  smtp-port: 587
+  sender: luigi@website.com
+  receivers:
+    - admin@website.com
+    - operations@website.com
+  use-tls: true
+  username: luigi-user
+  password: securepassword
+  subject-template: 'Luigi Task Failure Notification'
+  body-template: |
+    Task {{ task_id }} failed on {{ hostname }} at {{ time }}.
+    Logs available at: {{ log_url }}
+
+notifications:
+  enabled: true
+  email: true
+  webhook-url: https://webhook.website.com/notify
+  slack:
+    enabled: true
+    webhook-url: https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+    channel: '#luigi-tasks'
+    username: 'Luigi Bot'
+    icon-emoji: ':robot_face:'
+  
+failure-handling:
+  max-failure-retries: 3
+  retry-delay: 300  # Retry failed tasks every 5 minutes
+  retry-failed-tasks: true
+  notify-on-failure: true
+
+kubernetes:
+  enabled: true
+  kube-api-url: https://k8s-api.website.com
+  kube-namespace: default
+  kube-pod-template: /luigi/pod_template.yaml
+  kube-config: /luigi/kubeconfig.yaml
+  retry-limit: 5
+  resource-requests:
+    memory: "4Gi"
+    cpu: "2"
+  resource-limits:
+    memory: "8Gi"
+    cpu: "4"
+
+aws:
+  s3:
+    enabled: true
+    access-key-id: access-key-id
+    secret-access-key: secret-access-key
+    region: us-west-2
+    bucket-name: luigi-bucket
+    retry-attempts: 5
+
+gcp:
+  gcs:
+    enabled: true
+    project-id: project-id
+    credentials-file: /luigi/gcp-credentials.json
+    bucket-name: luigi-bucket
+    retry-attempts: 5
+
+custom_commands:
+  health-check:
+    command: curl -f http://scheduler.website.com:8082/health || exit 1
+    interval: 60
+    retries: 5
+    failure-command: systemctl restart luigi
+
+metadata:
+  version: 1.0.0
+  description: "Luigi orchestration for distributed data processing tasks"
+  maintainer: "person"
